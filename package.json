@@ -1,0 +1,66 @@
+{
+  "name": "trungnam-kiemtra-hd",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "electron-dev": "concurrently \"next dev\" \"electron .\"",
+    "prebuild:electron": "node copy-standalone.js",
+    "dist": "npm run build && npm run prebuild:electron && electron-builder"
+  },
+  "build": {
+    "appId": "com.tnec.pkt",
+    "productName": "TNEC - PKT",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      ".next/standalone/**/*",
+      "main.js",
+      "package.json"
+    ],
+    "asar": false,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "allowElevation": true
+    }
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.34.3",
+    "googleapis": "^171.4.0",
+    "lucide-react": "^0.575.0",
+    "next": "16.1.6",
+    "openai": "^6.25.0",
+    "pdf2json": "^4.0.2",
+    "pdfjs-dist": "^5.4.624",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
