@@ -1,10 +1,10 @@
 {
-  "name": "trungnam-kiemtra-hd",
+  "name": "ho-so-thanh-toan-tam",
   "version": "0.1.0",
   "private": true,
   "main": "main.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.tnec.pkt",
-    "productName": "TNEC - PKT",
+    "productName": "HO SO THANH TOAN-TAM",
     "directories": {
       "output": "dist"
     },
@@ -45,7 +45,7 @@
     "next": "16.1.6",
     "openai": "^6.25.0",
     "pdf2json": "^4.0.2",
-    "pdfjs-dist": "^5.4.624",
+    "pdfjs-dist": "^4.4.168",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.5.0"

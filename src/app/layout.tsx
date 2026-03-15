@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Trungnam E&C - AI Contract Reader",
-  description: "AI-powered financial contract analysis and Google Sheets integration.",
+  title: "HO SO THANH TOAN-TAM",
+  description: "AI-powered payment dossier extraction and Google Sheets integration.",
 };
 
 export default function RootLayout({

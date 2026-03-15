@@ -65,7 +65,7 @@ async function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
         },
-        title: "TNEC - PKT",
+        title: "HO SO THANH TOAN-TAM",
         show: false, // Show only when ready
     });
 

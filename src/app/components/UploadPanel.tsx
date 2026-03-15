@@ -10,6 +10,9 @@ interface UploadPanelProps {
     processingText: string;
 }
 
+const ACCENT = '#4f46e5';
+const ACCENT_LIGHT = '#6366f1';
+
 export default function UploadPanel({ onUpload, status, processingText }: UploadPanelProps) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -18,7 +21,6 @@ export default function UploadPanel({ onUpload, status, processingText }: Upload
         e.preventDefault();
         setIsDragging(true);
     };
-
     const handleDragLeave = () => setIsDragging(false);
 
     const handleDrop = (e: React.DragEvent) => {
@@ -34,174 +36,145 @@ export default function UploadPanel({ onUpload, status, processingText }: Upload
     };
 
     return (
-        <div
-            className="relative h-full w-full flex flex-col items-center justify-center p-6 overflow-hidden"
-            style={{ background: '#050505' }}
+        <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className={`w-full max-w-md rounded-2xl p-8 flex flex-col items-center transition-all duration-300 ${isDragging ? 'scale-[1.01]' : ''}`}
+            style={{
+                background: isDragging ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.75)',
+                backdropFilter: 'blur(20px)',
+                border: isDragging ? '2px dashed rgba(79,70,229,0.5)' : '1px solid rgba(0,0,0,0.06)',
+                boxShadow: isDragging
+                    ? '0 12px 40px rgba(79,70,229,0.12), 0 4px 16px rgba(0,0,0,0.06)'
+                    : '0 4px 24px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.9)',
+            }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
         >
-            {/* Background radial glows */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full opacity-[0.04]"
-                    style={{ background: 'radial-gradient(circle, #00f2ff 0%, transparent 70%)', filter: 'blur(40px)' }} />
-                <div className="absolute bottom-1/3 right-1/4 w-48 h-48 rounded-full opacity-[0.03]"
-                    style={{ background: 'radial-gradient(circle, #9b5de5 0%, transparent 70%)', filter: 'blur(30px)' }} />
-            </div>
-
-            {/* Main Glass Card */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className={`relative z-10 w-full max-w-sm rounded-3xl p-8 flex flex-col items-center transition-all duration-300 ${isDragging ? 'scale-[1.02]' : ''}`}
-                style={{
-                    background: 'rgba(14,14,14,0.85)',
-                    backdropFilter: 'blur(28px)',
-                    border: isDragging ? '1px solid rgba(0,242,255,0.4)' : '1px solid rgba(255,255,255,0.07)',
-                    boxShadow: isDragging
-                        ? '0 0 0 1px rgba(0,242,255,0.15), 0 0 60px rgba(0,242,255,0.12), 0 24px 60px rgba(0,0,0,0.8)'
-                        : '0 0 0 1px rgba(0,242,255,0.03), 0 24px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)',
-                }}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                <AnimatePresence mode="wait">
-                    {status === "IDLE" && (
-                        <motion.div
-                            key="idle"
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -12 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex flex-col items-center text-center w-full"
-                        >
-                            {/* 3D-style icon */}
-                            <div className="relative mb-7">
-                                <div className="w-20 h-20 rounded-2xl flex items-center justify-center animate-float"
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(0,242,255,0.15) 0%, rgba(0,242,255,0.04) 100%)',
-                                        border: '1px solid rgba(0,242,255,0.2)',
-                                        boxShadow: '0 0 30px rgba(0,242,255,0.15), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
-                                    }}
-                                >
-                                    <Upload className="w-9 h-9" style={{ color: '#00f2ff' }} />
-                                </div>
-                                {/* Glow ring */}
-                                <div className="absolute inset-0 rounded-2xl opacity-20 animate-pulse-glow" />
+            <AnimatePresence mode="wait">
+                {status === "IDLE" && (
+                    <motion.div
+                        key="idle"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.25 }}
+                        className="flex flex-col items-center text-center w-full"
+                    >
+                        {/* Icon */}
+                        <div className="relative mb-6">
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center animate-float"
+                                style={{
+                                    background: 'linear-gradient(135deg, rgba(79,70,229,0.1) 0%, rgba(99,102,241,0.05) 100%)',
+                                    border: '1px solid rgba(79,70,229,0.15)',
+                                    boxShadow: '0 4px 16px rgba(79,70,229,0.1)',
+                                }}
+                            >
+                                <Upload className="w-7 h-7" style={{ color: ACCENT }} />
                             </div>
+                            <div className="absolute inset-0 rounded-2xl opacity-30 animate-pulse-glow" />
+                        </div>
 
-                            <h3 className="text-xl font-bold mb-2"
-                                style={{
-                                    background: 'linear-gradient(135deg, #c0c0c0 0%, #ffffff 50%, #c0c0c0 100%)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    backgroundClip: 'text',
-                                }}
-                            >
-                                Tải lên Hợp đồng
-                            </h3>
-                            <p className="text-white/40 text-sm mb-7 leading-relaxed">
-                                Kéo thả file PDF vào đây<br />hoặc click để chọn file
+                        <h3 className="text-lg font-bold mb-1" style={{ color: '#1a1a2e' }}>
+                            Tải lên Hồ sơ Thanh toán
+                        </h3>
+                        <p className="text-sm mb-6 leading-relaxed" style={{ color: '#9ca3af' }}>
+                            Kéo thả file PDF vào đây hoặc click để chọn file
+                        </p>
+
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-white cursor-pointer"
+                            style={{
+                                background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_LIGHT} 100%)`,
+                                boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
+                            }}
+                        >
+                            Chọn File PDF
+                        </button>
+
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept="application/pdf"
+                            multiple
+                            className="hidden"
+                        />
+
+                        <div className="flex items-center gap-3 mt-5">
+                            <div className="h-px flex-1" style={{ background: 'rgba(0,0,0,0.06)' }} />
+                            <p className="text-[10px] font-mono tracking-widest uppercase" style={{ color: '#d1d5db' }}>
+                                PDF · Multi-page
                             </p>
+                            <div className="h-px flex-1" style={{ background: 'rgba(0,0,0,0.06)' }} />
+                        </div>
+                    </motion.div>
+                )}
 
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                {status === "PROCESSING" && (
+                    <motion.div
+                        key="processing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex flex-col items-center text-center w-full py-4"
+                    >
+                        <div className="relative w-20 h-28 rounded-xl flex items-center justify-center mb-6 overflow-hidden"
+                            style={{
+                                background: 'rgba(79,70,229,0.04)',
+                                border: '1px solid rgba(79,70,229,0.15)',
+                                boxShadow: '0 4px 16px rgba(79,70,229,0.08)',
+                            }}
+                        >
+                            <FileText className="w-10 h-10" style={{ color: 'rgba(79,70,229,0.2)' }} />
+                            <div className="animate-scan" />
+                        </div>
+
+                        <div className="w-full max-w-[240px] h-1.5 rounded-full overflow-hidden mb-4"
+                            style={{ background: 'rgba(0,0,0,0.06)' }}
+                        >
+                            <motion.div
+                                className="h-full rounded-full"
                                 style={{
-                                    background: 'linear-gradient(135deg, rgba(0,242,255,0.2) 0%, rgba(0,242,255,0.08) 100%)',
-                                    border: '1px solid rgba(0,242,255,0.35)',
-                                    color: '#00f2ff',
-                                    boxShadow: '0 0 20px rgba(0,242,255,0.1)',
+                                    background: `linear-gradient(90deg, ${ACCENT}, ${ACCENT_LIGHT})`,
+                                    boxShadow: '0 0 8px rgba(79,70,229,0.4)',
                                 }}
-                            >
-                                Chọn File PDF
-                            </button>
-
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                accept="application/pdf"
-                                multiple
-                                className="hidden"
+                                initial={{ width: "0%" }}
+                                animate={{ width: "100%" }}
+                                transition={{ duration: 12, ease: "easeInOut" }}
                             />
+                        </div>
+                        <p className="text-sm animate-pulse font-medium" style={{ color: ACCENT }}>
+                            {processingText}
+                        </p>
+                    </motion.div>
+                )}
 
-                            {/* Drop hint */}
-                            <p className="mt-5 text-[11px] text-white/20 font-mono tracking-widest uppercase">
-                                PDF · Multi-page supported
-                            </p>
-                        </motion.div>
-                    )}
-
-                    {status === "PROCESSING" && (
-                        <motion.div
-                            key="processing"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex flex-col items-center text-center w-full"
+                {status === "SUCCESS" && (
+                    <motion.div
+                        key="success"
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                        className="flex flex-col items-center text-center py-4"
+                    >
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                            style={{
+                                background: 'rgba(16,185,129,0.1)',
+                                border: '1px solid rgba(16,185,129,0.25)',
+                                boxShadow: '0 4px 16px rgba(16,185,129,0.12)',
+                            }}
                         >
-                            {/* Animated document */}
-                            <div className="relative w-28 h-36 rounded-xl flex items-center justify-center mb-8 overflow-hidden"
-                                style={{
-                                    background: 'rgba(18,18,18,0.8)',
-                                    border: '1px solid rgba(0,242,255,0.2)',
-                                    boxShadow: '0 0 30px rgba(0,242,255,0.1)',
-                                }}
-                            >
-                                <FileText className="w-14 h-14 text-white/10" />
-                                <div className="animate-scan" />
-                            </div>
-
-                            <div className="w-full max-w-[200px] h-1 rounded-full overflow-hidden mb-4"
-                                style={{ background: 'rgba(255,255,255,0.06)' }}
-                            >
-                                <motion.div
-                                    className="h-full rounded-full"
-                                    style={{
-                                        background: 'linear-gradient(90deg, #00f2ff, #9b5de5)',
-                                        boxShadow: '0 0 12px rgba(0,242,255,0.5)',
-                                    }}
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: "100%" }}
-                                    transition={{ duration: 12, ease: "easeInOut" }}
-                                />
-                            </div>
-                            <p className="text-sm animate-pulse font-mono" style={{ color: '#00f2ff' }}>
-                                {processingText}
-                            </p>
-                        </motion.div>
-                    )}
-
-                    {status === "SUCCESS" && (
-                        <motion.div
-                            key="success"
-                            initial={{ opacity: 0, scale: 0.85 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                            className="flex flex-col items-center text-center"
-                        >
-                            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
-                                style={{
-                                    background: 'rgba(16,185,129,0.15)',
-                                    border: '1px solid rgba(16,185,129,0.4)',
-                                    boxShadow: '0 0 30px rgba(16,185,129,0.2)',
-                                }}
-                            >
-                                <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-1">Quét hoàn tất</h3>
-                            <p className="text-white/40 text-sm">AI đã trích xuất dữ liệu thành công.</p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-
-            {/* Footer */}
-            <div className="absolute bottom-6 z-10 text-center">
-                <p className="text-white/15 text-[10px] font-mono tracking-widest uppercase">
-                    Contract AI Engine · Trungnam E&amp;C
-                </p>
-            </div>
-        </div>
+                            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        </div>
+                        <h3 className="text-lg font-bold mb-1" style={{ color: '#1a1a2e' }}>Quét hoàn tất</h3>
+                        <p className="text-sm" style={{ color: '#9ca3af' }}>AI đã trích xuất dữ liệu thành công.</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 }
