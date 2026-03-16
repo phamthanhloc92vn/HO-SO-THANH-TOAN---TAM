@@ -99,8 +99,9 @@ export default function Home() {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
-        // Render tối đa 15 trang ảnh cho Vision API (text extraction via pdf2json vẫn quét toàn bộ)
-        const pagesToScan = Math.min(totalPages, 15);
+        // Tăng giới hạn trang lên 50 để quét toàn bộ. Vercel giới hạn là 4.5MB.
+        // Cần nén ảnh cực mạnh (0.3) do quét tới 50 trang
+        const pagesToScan = Math.min(totalPages, 50);
 
         // Render page 1 for thumbnail
         const page1 = await pdf.getPage(1);
@@ -121,7 +122,8 @@ export default function Home() {
         const pageImages: string[] = [];
         for (let p = 1; p <= pagesToScan; p++) {
           const pdfPage = await pdf.getPage(p);
-          const vp = pdfPage.getViewport({ scale: 1.2 });
+          // Thu nhỏ scale xuống 0.7 (rộng khoảng ~500-600px) để giảm size JSON payload
+          const vp = pdfPage.getViewport({ scale: 0.7 });
           const pageCanvas = document.createElement("canvas");
           const pageCtx = pageCanvas.getContext("2d");
           pageCanvas.height = vp.height;
@@ -129,7 +131,8 @@ export default function Home() {
           if (pageCtx) {
             await pdfPage.render({ canvasContext: pageCtx, viewport: vp }).promise;
           }
-          pageImages.push(pageCanvas.toDataURL("image/jpeg", 0.8));
+          // Nén cực mạnh (quality 0.3) khi quét 50 trang để tránh Vercel 4.5MB limit
+          pageImages.push(pageCanvas.toDataURL("image/jpeg", 0.3));
         }
         const imageBase64 = pageImages[0];
 
@@ -148,7 +151,7 @@ export default function Home() {
           method: "POST",
           headers: {
             "x-api-key": settings.apiKey,
-            "x-model": settings.model || "gpt-4o"
+            "x-model": settings.model || "gpt-4.5-preview"
           },
           body: formData
         });

@@ -103,10 +103,10 @@ Quét TOÀN BỘ tài liệu theo thứ tự ưu tiên:
 - BẮT BUỘC dạng "DD/MM/YYYY" nếu có
 
 ### 11. "Danh mục hs kèm theo"
-- Liệt kê TẤT CẢ các loại tài liệu/hồ sơ có trong bộ hồ sơ thanh toán
-- QUAN TRỌNG: Bạn PHẢI KIỂM TRA xem trong bộ hồ sơ có mặt của "Hóa đơn giá trị gia tăng" (hoặc "Hóa đơn GTGT") hay không.
-- Nếu CÓ "Hóa đơn giá trị gia tăng", hãy ghi rõ loại hóa đơn đó cùng với các tài liệu khác. Ví dụ: "Đề nghị TT + Hóa đơn giá trị gia tăng", "Đề nghị TT + HĐ + BBNT + Hóa đơn GTGT"
-- Nếu TUYỆT ĐỐI KHÔNG TÌM THẤY "Hóa đơn giá trị gia tăng" (hoặc "Hóa đơn GTGT") trong toàn bộ hồ sơ, bạn BẮT BUỘC chỉ trả về kết quả là: "thiếu hóa đơn"
+- BẮT BUỘC PHẢI QUÉT TOÀN BỘ NỘI DUNG hồ sơ để kiểm tra.
+- Nếu CÓ "Hóa đơn giá trị gia tăng" (hoặc "Hóa đơn GTGT") trong hồ sơ, hãy ghi kết quả trả về trường này (có thể kèm các tài liệu khác, VD: "Đề nghị TT + Hóa đơn giá trị gia tăng", "Hóa đơn GTGT").
+- Tương tự, liệt kê các tài liệu khác (nếu có) như Đề nghị TT, HĐ, BBNT...
+- Nếu KHÔNG CÓ hóa đơn trong toàn bộ hồ sơ, bạn BẮT BUỘC trả kết quả ghi là: "Không hóa đơn".
 - Từ viết tắt phổ biến: TT = Thanh toán, HĐ = Hợp đồng, BBNT = Biên bản nghiệm thu
 
 ## CẤU TRÚC JSON BẮT BUỘC:
