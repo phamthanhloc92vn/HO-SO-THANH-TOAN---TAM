@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import PDFParser from 'pdf2json';
 
+// Configure the maximum upload size for this App Router API
+export const maxDuration = 60; // Set to 60 seconds manually instead of vercel.json
+
+
 export async function POST(request: Request) {
 
     try {
