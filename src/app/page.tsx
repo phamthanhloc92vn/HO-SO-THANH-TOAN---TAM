@@ -267,7 +267,7 @@ Quét TOÀN BỘ tài liệu theo thứ tự ưu tiên:
           throw new Error("Không thể trích xuất nội dung từ file PDF này.");
         }
 
-        const modelToUse = settings.model || "gpt-4.1-mini";
+        const modelToUse = settings.model || "gpt-4o";
 
         // Gọi OpenAI API TRỰC TIẾP từ trình duyệt (bypass Vercel hoàn toàn)
         const response = await fetch("https://api.openai.com/v1/chat/completions", {

@@ -21,7 +21,7 @@ const ACCENT = '#4f46e5';
 export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModalProps) {
     const [settings, setSettings] = useState<Settings>({
         apiKey: "",
-        model: "gpt-4.1-mini",
+        model: "gpt-4o",
         scriptUrl: "https://script.google.com/macros/s/AKfycbzDGZ-ZaDq1glP7A9UvnraC8KDXsbui5V6_Z29dupXaW_yfd9tA9iIuMR74qbkxGdqZ/exec",
     });
 
@@ -30,7 +30,7 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
     const [apiTestStatus, setApiTestStatus] = useState<"IDLE" | "TESTING" | "SUCCESS" | "ERROR">("IDLE");
     const [scriptTestStatus, setScriptTestStatus] = useState<"IDLE" | "TESTING" | "SUCCESS" | "ERROR">("IDLE");
 
-    const VALID_MODELS = ["gpt-4.1-mini", "gpt-4o"];
+    const VALID_MODELS = ["gpt-4o", "gpt-4.1-mini"];
 
     useEffect(() => {
         const saved = localStorage.getItem("contract_ai_settings");
@@ -39,7 +39,7 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
                 const parsed = JSON.parse(saved);
                 // Auto-fix: nếu model cũ không hợp lệ (VD: gpt-4.5-preview), đổi về gpt-4.1-mini
                 if (parsed.model && !VALID_MODELS.includes(parsed.model)) {
-                    parsed.model = "gpt-4.1-mini";
+                    parsed.model = "gpt-4o";
                     localStorage.setItem("contract_ai_settings", JSON.stringify(parsed));
                 }
                 setSettings(parsed);
@@ -169,8 +169,8 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
                                             onChange={(e) => setSettings({ ...settings, model: e.target.value })}
                                             className={`${inputClasses} appearance-none cursor-pointer`}
                                         >
-                                            <option value="gpt-4.1-mini">GPT-4.1 Mini (Khuyên dùng)</option>
-                                            <option value="gpt-4o">GPT-4o</option>
+                                            <option value="gpt-4o">GPT-4o (Khuyên dùng - Hỗ trợ Vision)</option>
+                                            <option value="gpt-4.1-mini">GPT-4.1 Mini (Chỉ văn bản)</option>
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
                                     </div>
