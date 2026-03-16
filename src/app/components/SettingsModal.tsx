@@ -160,9 +160,7 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
                                             className={`${inputClasses} appearance-none cursor-pointer`}
                                         >
                                             <option value="gpt-4.1-mini">GPT-4.1 Mini (Khuyên dùng)</option>
-                                            <option value="gpt-4o">gpt-4o (Khuyên dùng)</option>
-                                            <option value="gpt-4-turbo">gpt-4-turbo</option>
-                                            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                            <option value="gpt-4o">GPT-4o</option>
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
                                     </div>
