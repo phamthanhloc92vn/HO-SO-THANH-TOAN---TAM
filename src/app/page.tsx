@@ -114,10 +114,7 @@ export default function Home() {
         newPreviews.push(previewBase64);
         setPreviews([...newPreviews]);
 
-        // ✅ GIẢI PHÁP TRIỆT ĐỂ: Trích xuất TEXT ngay trên TRÌNH DUYỆT
-        // Vercel Hobby limit cứng 4.5MB cho request body → không thể gửi file PDF lớn.
-        // → Dùng pdfjs-dist đọc toàn bộ text từ tất cả trang ngay trên client.
-        // → Chỉ gửi chuỗi text thuần (vài KB) lên server qua JSON.
+        // ===== BƯỚC 1: Trích xuất TEXT (cho PDF có text layer) =====
         setProcessingText(`Đang trích xuất văn bản từ ${totalPages} trang PDF...`);
         const allPageTexts: string[] = [];
         for (let p = 1; p <= totalPages; p++) {
@@ -129,30 +126,180 @@ export default function Home() {
           allPageTexts.push(`--- TRANG ${p} ---\n${pageText}`);
         }
         const fullText = allPageTexts.join("\n\n");
+        const hasText = fullText.replace(/---\s*TRANG\s*\d+\s*---/g, "").trim().length > 100;
 
+        // ===== BƯỚC 2: Render ảnh các trang PDF (cho PDF scan / ảnh) =====
+        // Chỉ render ảnh nếu PDF không có text layer đủ dài (PDF scan)
+        // Hoặc luôn render ảnh để AI có thể đọc visual
+        const maxPagesForImages = Math.min(totalPages, 20);
+        setProcessingText(`Đang render ${maxPagesForImages} trang PDF thành ảnh...`);
+        const pageImages: string[] = [];
+        for (let p = 1; p <= maxPagesForImages; p++) {
+          const pdfPage = await pdf.getPage(p);
+          const vp = pdfPage.getViewport({ scale: 1.0 });
+          const pageCanvas = document.createElement("canvas");
+          const pageCtx = pageCanvas.getContext("2d");
+          pageCanvas.height = vp.height;
+          pageCanvas.width = vp.width;
+          if (pageCtx) {
+            await pdfPage.render({ canvasContext: pageCtx, viewport: vp }).promise;
+          }
+          pageImages.push(pageCanvas.toDataURL("image/jpeg", 0.6));
+        }
+
+        // ===== BƯỚC 3: Gọi OpenAI API TRỰC TIẾP từ trình duyệt =====
+        // Bypass hoàn toàn Vercel 4.5MB limit!
         setProcessingText(`AI đang phân tích hồ sơ thanh toán...`);
 
-        // Gửi JSON text thuần thay vì FormData file (bypass Vercel 4.5MB limit hoàn toàn)
-        const response = await fetch("/api/extract-contract", {
+        const systemPrompt = `Bạn là chuyên gia OCR và trích xuất dữ liệu hồ sơ thanh toán tại Việt Nam. Nhiệm vụ: phân tích TOÀN BỘ nội dung PDF của bộ "Hồ sơ thanh toán" và trả về JSON.
+
+## ƯU TIÊN SỐ 1: PHIẾU ĐỀ NGHỊ THANH TOÁN
+⚠️ QUAN TRỌNG NHẤT: Mỗi bộ hồ sơ thanh toán LUÔN CÓ một trang "PHIẾU ĐỀ NGHỊ THANH TOÁN" (hoặc "Giấy đề nghị thanh toán"). Trang này chứa ĐẦY ĐỦ NHẤT các thông tin cần trích xuất.
+
+Bạn PHẢI TÌM VÀ ĐỌC KỸ trang "Phiếu đề nghị thanh toán" TRƯỚC TIÊN. Cấu trúc điển hình:
+- Tiêu đề: "PHIẾU ĐỀ NGHỊ THANH TOÁN" (in đậm, nằm đầu trang)
+- Mã số: "TCKT/BM/..." hoặc tương tự
+- Ngày: "Ngày ... / ... / ..."
+- Các dòng: "Người đề nghị thanh toán:", "Đơn vị công tác:", "Nội dung thanh toán:", "Hạng mục:"
+- Bảng kê chi tiết: STT | Nội dung thanh toán | Ngày Hóa Đơn | Số Hóa Đơn | Số tiền | Ghi chú
+- Dòng "Tổng" ở cuối bảng
+- Hình thức thanh toán: Tiền mặt □ / Chuyển khoản □
+- Phần chuyển khoản: "Đơn vị/Cá nhân nhận tiền:", "Số tài khoản:", "Tại Ngân hàng:"
+- Dòng "Số tiền đề nghị thanh toán:" (CON SỐ CHÍNH XÁC NHẤT)
+- Các ô ký: TRƯỞNG ĐƠN VỊ | KẾ TOÁN TRƯỞNG | PHỤ TRÁCH ĐƠN VỊ | NGƯỜI ĐỀ NGHỊ
+
+HÃY TRÍCH XUẤT DỮ LIỆU TỪ TRANG NÀY LÀ CHÍNH. Chỉ dùng các trang khác (hóa đơn, hợp đồng, biên bản) để bổ sung thông tin còn thiếu.
+
+## TRƯỜNG DỮ LIỆU CẦN TRÍCH XUẤT:
+Trả về object "data" với 11 key sau (tiếng Việt có dấu, chính xác tuyệt đối):
+"Ngày đề nghị", "Người nhận tiền", "Nội dung thanh toán", "Số tiền đề nghị thanh toán", "Dự án", "Người đề nghị thanh toán", "Đơn vị công tác", "Số tài khoản", "Tại Ngân hàng", "Hạn Thanh toán", "Danh mục hs kèm theo"
+
+## CHIẾN LƯỢC TÌM TỪNG TRƯỜNG:
+
+### 1. "Ngày đề nghị"
+- Tìm ngày trên "Giấy đề nghị thanh toán", "Phiếu đề nghị thanh toán" hoặc tiêu đề tài liệu
+- BẮT BUỘC trả về dạng "DD/MM/YYYY". VD: "ngày 13 tháng 3 năm 2026" → "13/03/2026"
+
+### 2. "Người nhận tiền"
+- Tìm trong mục "Người nhận tiền", "Đơn vị thụ hưởng", "Tên người hưởng", "Người thụ hưởng"
+
+### 3. "Nội dung thanh toán"
+- Tìm trong mục "Nội dung", "Nội dung thanh toán", "Diễn giải", "Lý do thanh toán", "V/v", "Về việc", "Trích yếu"
+- Tóm tắt ngắn gọn nội dung thanh toán
+
+### 4. "Số tiền đề nghị thanh toán" — TRƯỜNG QUAN TRỌNG NHẤT
+Quét TOÀN BỘ tài liệu theo thứ tự ưu tiên:
+1. Tìm "Số tiền đề nghị", "Tổng số tiền", "Số tiền thanh toán", "Số tiền đề nghị thanh toán", "Tổng cộng", "Thành tiền"
+2. Tìm số tiền lớn nhất đi kèm VND/VNĐ/đồng/USD
+3. Tìm trong bảng: dòng cuối (TỔNG CỘNG) của bảng chi tiết
+4. Tìm số tiền viết bằng chữ: "Năm triệu đồng" → 5.000.000
+⚠️ TUYỆT ĐỐI KHÔNG trả "N/A" nếu có BẤT KỲ con số nào đi kèm đơn vị tiền tệ
+⚠️ Chỉ trả về CON SỐ, không kèm đơn vị. VD: "200000" hoặc "5000000" (không dùng dấu phân cách)
+
+### 5. "Dự án"
+- Tìm "Dự án", "Công trình", "Tên dự án", "Project" trong toàn bộ tài liệu
+
+### 6. "Người đề nghị thanh toán"
+- Tìm "Người đề nghị", "Người lập", "Người yêu cầu" — thường là người ký ở cuối đơn đề nghị
+
+### 7. "Đơn vị công tác"
+- Tìm "Phòng/Ban", "Đơn vị", "Bộ phận" — phòng ban của người đề nghị
+
+### 8. "Số tài khoản"
+- Tìm "Số TK", "STK", "Số tài khoản", "Account number"
+
+### 9. "Tại Ngân hàng"
+- Tìm "Ngân hàng", "NH", "Bank", "Tại NH"
+
+### 10. "Hạn Thanh toán"
+- Tìm "Hạn thanh toán", "Thời hạn thanh toán", "Thanh toán trước ngày"
+- Nếu không tìm thấy → trả "N/A". BẮT BUỘC dạng "DD/MM/YYYY" nếu có
+
+### 11. "Danh mục hs kèm theo"
+- BẮT BUỘC PHẢI QUÉT TOÀN BỘ NỘI DUNG hồ sơ để kiểm tra.
+- Nếu CÓ "Hóa đơn giá trị gia tăng" (hoặc "Hóa đơn GTGT") trong hồ sơ, hãy ghi kết quả trả về trường này (có thể kèm các tài liệu khác, VD: "Đề nghị TT + Hóa đơn giá trị gia tăng", "Hóa đơn GTGT").
+- Tương tự, liệt kê các tài liệu khác (nếu có) như Đề nghị TT, HĐ, BBNT...
+- Nếu KHÔNG CÓ hóa đơn trong toàn bộ hồ sơ, bạn BẮT BUỘC trả kết quả ghi là: "Không hóa đơn".
+- Từ viết tắt phổ biến: TT = Thanh toán, HĐ = Hợp đồng, BBNT = Biên bản nghiệm thu
+
+## CẤU TRÚC JSON BẮT BUỘC:
+{
+  "data": {
+    "Ngày đề nghị": "...",
+    "Người nhận tiền": "...",
+    "Nội dung thanh toán": "...",
+    "Số tiền đề nghị thanh toán": "...",
+    "Dự án": "...",
+    "Người đề nghị thanh toán": "...",
+    "Đơn vị công tác": "...",
+    "Số tài khoản": "...",
+    "Tại Ngân hàng": "...",
+    "Hạn Thanh toán": "...",
+    "Danh mục hs kèm theo": "..."
+  },
+  "validationScores": {
+    "Ngày đề nghị": 90,
+    "Người nhận tiền": 85,
+    "Nội dung thanh toán": 90,
+    "Số tiền đề nghị thanh toán": 95,
+    "Dự án": 80,
+    "Người đề nghị thanh toán": 85,
+    "Đơn vị công tác": 80,
+    "Số tài khoản": 85,
+    "Tại Ngân hàng": 85,
+    "Hạn Thanh toán": 75,
+    "Danh mục hs kèm theo": 80
+  }
+}`;
+
+        // Build user content: text + images
+        const userContent: any[] = [];
+        if (hasText) {
+          userContent.push({ type: "text", text: `VĂN BẢN TRÍCH XUẤT TỪ PDF (${fullText.length} ký tự):\n\n${fullText.substring(0, 80000)}` });
+        }
+        if (pageImages.length > 0) {
+          userContent.push({ type: "text", text: `Dưới đây là ${pageImages.length} trang ảnh từ file PDF hồ sơ thanh toán. Hãy phân tích KỸ TẤT CẢ các trang để tìm thông tin thanh toán:` });
+          for (const img of pageImages) {
+            userContent.push({ type: "image_url", image_url: { url: img, detail: "high" } });
+          }
+        }
+        if (userContent.length === 0) {
+          throw new Error("Không thể trích xuất nội dung từ file PDF này.");
+        }
+
+        const modelToUse = settings.model || "gpt-4.1-mini";
+
+        // Gọi OpenAI API TRỰC TIẾP từ trình duyệt (bypass Vercel hoàn toàn)
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": settings.apiKey,
-            "x-model": settings.model || "gpt-4.1-mini"
+            "Authorization": `Bearer ${settings.apiKey}`
           },
-          body: JSON.stringify({ text: fullText })
+          body: JSON.stringify({
+            model: modelToUse,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userContent }
+            ]
+          })
         });
 
         const responseText = await response.text();
         let result;
         try {
-          result = JSON.parse(responseText || "{}");
-        } catch (e) {
-          throw new Error(`API Error (HTTP ${response.status}): Server did not return valid JSON.`);
-        }
-
-        if (!response.ok) {
-          throw new Error(result.error || `Server error ${response.status}`);
+          const parsed = JSON.parse(responseText || "{}");
+          if (!response.ok) {
+            const errMsg = parsed.error?.message || parsed.error || `OpenAI API error ${response.status}`;
+            throw new Error(String(errMsg));
+          }
+          // OpenAI API trả về dạng: { choices: [{ message: { content: "..." } }] }
+          const aiContent = parsed.choices?.[0]?.message?.content || "{}";
+          result = JSON.parse(aiContent);
+        } catch (e: any) {
+          if (e.message && (e.message.includes("OpenAI") || e.message.includes("API"))) throw e;
+          throw new Error(`AI không trả về JSON hợp lệ (HTTP ${response.status}).`);
         }
 
         // Normalize dates
