@@ -117,33 +117,13 @@ export default function Home() {
         newPreviews.push(previewBase64);
         setPreviews([...newPreviews]);
 
-        // Render multiple pages for Vision
-        setProcessingText(`Đang render ${pagesToScan} trang PDF...`);
-        const pageImages: string[] = [];
-        for (let p = 1; p <= pagesToScan; p++) {
-          const pdfPage = await pdf.getPage(p);
-          // Thu nhỏ scale xuống 0.7 (rộng khoảng ~500-600px) để giảm size JSON payload
-          const vp = pdfPage.getViewport({ scale: 0.7 });
-          const pageCanvas = document.createElement("canvas");
-          const pageCtx = pageCanvas.getContext("2d");
-          pageCanvas.height = vp.height;
-          pageCanvas.width = vp.width;
-          if (pageCtx) {
-            await pdfPage.render({ canvasContext: pageCtx, viewport: vp }).promise;
-          }
-          // Nén cực mạnh (quality 0.3) khi quét 50 trang để tránh Vercel 4.5MB limit
-          pageImages.push(pageCanvas.toDataURL("image/jpeg", 0.3));
-        }
-        const imageBase64 = pageImages[0];
-
-        // Prepare Form Data
+        // 🚨 CHÚ Ý QUAN TRỌNG: Không gửi mảng Base64 ảnh lên Vercel Serverless nữa!
+        // Vercel limit là 4.5MB. Gửi ảnh 50 trang sẽ luôn bị lỗi HTTP 413 Payload Too Large.
+        // Giải pháp: Chỉ gửi file PDF gốc, API phía server sẽ dùng pdf2json để trích xuất chữ.
+        
+        // Prepare Form Data (Chỉ gửi File gốc)
         const formData = new FormData();
         formData.append("file", file);
-        pageImages.forEach((img, idx) => {
-          formData.append(`image_page_${idx + 1}`, img);
-        });
-        formData.append("image", imageBase64);
-        formData.append("total_pages_sent", String(pagesToScan));
 
         setProcessingText(`AI đang phân tích hồ sơ thanh toán...`);
 
