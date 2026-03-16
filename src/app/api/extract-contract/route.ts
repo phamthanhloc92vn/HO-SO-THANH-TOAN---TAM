@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
     try {
         const apiKey = request.headers.get('x-api-key');
-        const overrideModel = request.headers.get('x-model') || 'gpt-4.5-preview';
+        const overrideModel = request.headers.get('x-model') || 'gpt-4.1-mini';
 
         if (!apiKey) {
             return NextResponse.json({ error: 'Missing API key' }, { status: 400 });

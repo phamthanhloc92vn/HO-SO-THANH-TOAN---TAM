@@ -21,7 +21,7 @@ const ACCENT = '#4f46e5';
 export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModalProps) {
     const [settings, setSettings] = useState<Settings>({
         apiKey: "",
-        model: "gpt-4.5-preview",
+        model: "gpt-4.1-mini",
         scriptUrl: "https://script.google.com/macros/s/AKfycbzDGZ-ZaDq1glP7A9UvnraC8KDXsbui5V6_Z29dupXaW_yfd9tA9iIuMR74qbkxGdqZ/exec",
     });
 
@@ -159,7 +159,7 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
                                             onChange={(e) => setSettings({ ...settings, model: e.target.value })}
                                             className={`${inputClasses} appearance-none cursor-pointer`}
                                         >
-                                            <option value="gpt-4.5-preview">GPT-4.5 Preview (Tốt nhất, thông minh nhất)</option>
+                                            <option value="gpt-4.1-mini">GPT-4.1 Mini (Khuyên dùng)</option>
                                             <option value="gpt-4o">gpt-4o (Khuyên dùng)</option>
                                             <option value="gpt-4-turbo">gpt-4-turbo</option>
                                             <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>

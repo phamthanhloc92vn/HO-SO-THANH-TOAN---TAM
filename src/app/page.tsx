@@ -138,7 +138,7 @@ export default function Home() {
           headers: {
             "Content-Type": "application/json",
             "x-api-key": settings.apiKey,
-            "x-model": settings.model || "gpt-4.5-preview"
+            "x-model": settings.model || "gpt-4.1-mini"
           },
           body: JSON.stringify({ text: fullText })
         });
