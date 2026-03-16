@@ -99,9 +99,6 @@ export default function Home() {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
-        // Tăng giới hạn trang lên 50 để quét toàn bộ. Vercel giới hạn là 4.5MB.
-        // Cần nén ảnh cực mạnh (0.3) do quét tới 50 trang
-        const pagesToScan = Math.min(totalPages, 50);
 
         // Render page 1 for thumbnail
         const page1 = await pdf.getPage(1);
@@ -117,23 +114,33 @@ export default function Home() {
         newPreviews.push(previewBase64);
         setPreviews([...newPreviews]);
 
-        // 🚨 CHÚ Ý QUAN TRỌNG: Không gửi mảng Base64 ảnh lên Vercel Serverless nữa!
-        // Vercel limit là 4.5MB. Gửi ảnh 50 trang sẽ luôn bị lỗi HTTP 413 Payload Too Large.
-        // Giải pháp: Chỉ gửi file PDF gốc, API phía server sẽ dùng pdf2json để trích xuất chữ.
-        
-        // Prepare Form Data (Chỉ gửi File gốc)
-        const formData = new FormData();
-        formData.append("file", file);
+        // ✅ GIẢI PHÁP TRIỆT ĐỂ: Trích xuất TEXT ngay trên TRÌNH DUYỆT
+        // Vercel Hobby limit cứng 4.5MB cho request body → không thể gửi file PDF lớn.
+        // → Dùng pdfjs-dist đọc toàn bộ text từ tất cả trang ngay trên client.
+        // → Chỉ gửi chuỗi text thuần (vài KB) lên server qua JSON.
+        setProcessingText(`Đang trích xuất văn bản từ ${totalPages} trang PDF...`);
+        const allPageTexts: string[] = [];
+        for (let p = 1; p <= totalPages; p++) {
+          const pdfPage = await pdf.getPage(p);
+          const textContent = await pdfPage.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(" ");
+          allPageTexts.push(`--- TRANG ${p} ---\n${pageText}`);
+        }
+        const fullText = allPageTexts.join("\n\n");
 
         setProcessingText(`AI đang phân tích hồ sơ thanh toán...`);
 
+        // Gửi JSON text thuần thay vì FormData file (bypass Vercel 4.5MB limit hoàn toàn)
         const response = await fetch("/api/extract-contract", {
           method: "POST",
           headers: {
+            "Content-Type": "application/json",
             "x-api-key": settings.apiKey,
             "x-model": settings.model || "gpt-4.5-preview"
           },
-          body: formData
+          body: JSON.stringify({ text: fullText })
         });
 
         const responseText = await response.text();

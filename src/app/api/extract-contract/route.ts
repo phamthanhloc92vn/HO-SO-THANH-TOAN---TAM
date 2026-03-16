@@ -1,35 +1,25 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import PDFParser from 'pdf2json';
 
-// Configure the maximum upload size for this App Router API
-export const maxDuration = 60; // Set to 60 seconds manually instead of vercel.json
-
+// Cho phép Vercel Serverless Function chạy tối đa 60 giây
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
 
     try {
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
         const apiKey = request.headers.get('x-api-key');
-        const overrideModel = request.headers.get('x-model') || 'gpt-4o';
+        const overrideModel = request.headers.get('x-model') || 'gpt-4.5-preview';
 
         if (!apiKey) {
             return NextResponse.json({ error: 'Missing API key' }, { status: 400 });
         }
 
-        let text = "";
-        if (file) {
-            const arrayBuffer = await file.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            text = await new Promise<string>((resolve, reject) => {
-                const pdfParser = new PDFParser(null, true);
-                pdfParser.on("pdfParser_dataError", (errData: any) => reject(new Error(errData.parserError?.message || "PDF Parsing failed")));
-                pdfParser.on("pdfParser_dataReady", () => {
-                    resolve(pdfParser.getRawTextContent());
-                });
-                pdfParser.parseBuffer(buffer);
-            });
+        // Nhận text đã được trích xuất từ client-side (pdfjs-dist trên trình duyệt)
+        const body = await request.json();
+        const text = body.text || "";
+
+        if (!text || text.trim() === '') {
+            return NextResponse.json({ error: 'No text content provided for analysis' }, { status: 400 });
         }
 
         const openai = new OpenAI({ apiKey });
@@ -143,45 +133,12 @@ Quét TOÀN BỘ tài liệu theo thứ tự ưu tiên:
   }
 }`;
 
-        const userContent: any[] = [];
-
-        // Send full text (toàn bộ nội dung text, tối đa 100,000 ký tự)
-        if (text && text.trim().length > 0) {
-            userContent.push({ type: "text", text: `PHẦN VĂN BẢN TRÍCH XUẤT TỪ PDF (${text.length} ký tự):\n\n${text.substring(0, 100000)}` });
-        }
-
-        // Collect all page images sent by client (image_page_1, image_page_2, ...)
-        const totalPagesSent = parseInt(formData.get('total_pages_sent') as string || '1', 10);
-        const pageImagesFound: string[] = [];
-        for (let p = 1; p <= totalPagesSent; p++) {
-            const img = formData.get(`image_page_${p}`) as string;
-            if (img) pageImagesFound.push(img);
-        }
-
-        // Fallback: use legacy 'image' field if no page images found
-        if (pageImagesFound.length === 0) {
-            const fallback = formData.get('image') as string;
-            if (fallback) pageImagesFound.push(fallback);
-        }
-
-        // Add all page images to Vision payload (GPT-4o can handle multiple images)
-        if (pageImagesFound.length > 0) {
-            userContent.push({ type: "text", text: `Dưới đây là ${pageImagesFound.length} trang ảnh từ file PDF hồ sơ thanh toán. Hãy phân tích KỸ TẤT CẢ các trang để tìm thông tin thanh toán, đặc biệt chú ý số tiền, người nhận tiền, số tài khoản, và danh mục hồ sơ kèm theo:` });
-            for (const img of pageImagesFound) {
-                userContent.push({
-                    type: "image_url",
-                    image_url: { url: img, detail: "high" }
-                });
-            }
-        }
-
-        if (userContent.length === 0) {
-            return NextResponse.json({ error: 'No content provided for analysis' }, { status: 400 });
-        }
-
         const messages = [
             { role: "system" as const, content: systemPrompt },
-            { role: "user" as const, content: userContent }
+            {
+                role: "user" as const,
+                content: `TOÀN BỘ VĂN BẢN TRÍCH XUẤT TỪ PDF (${text.length} ký tự):\n\n${text.substring(0, 120000)}`
+            }
         ];
 
         const completion = await openai.chat.completions.create({
@@ -193,7 +150,7 @@ Quét TOÀN BỘ tài liệu theo thứ tự ưu tiên:
         const resultText = completion.choices[0].message.content || "{}";
         const result = JSON.parse(resultText);
 
-        console.log("AI Response (Vision/Text):", JSON.stringify(result, null, 2));
+        console.log("AI Response (Text-only):", JSON.stringify(result, null, 2));
 
         return NextResponse.json(result);
 
