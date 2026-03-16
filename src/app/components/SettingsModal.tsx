@@ -30,10 +30,20 @@ export default function SettingsModal({ isOpen, onClose, onSave }: SettingsModal
     const [apiTestStatus, setApiTestStatus] = useState<"IDLE" | "TESTING" | "SUCCESS" | "ERROR">("IDLE");
     const [scriptTestStatus, setScriptTestStatus] = useState<"IDLE" | "TESTING" | "SUCCESS" | "ERROR">("IDLE");
 
+    const VALID_MODELS = ["gpt-4.1-mini", "gpt-4o"];
+
     useEffect(() => {
         const saved = localStorage.getItem("contract_ai_settings");
         if (saved) {
-            try { setSettings(JSON.parse(saved)); }
+            try {
+                const parsed = JSON.parse(saved);
+                // Auto-fix: nếu model cũ không hợp lệ (VD: gpt-4.5-preview), đổi về gpt-4.1-mini
+                if (parsed.model && !VALID_MODELS.includes(parsed.model)) {
+                    parsed.model = "gpt-4.1-mini";
+                    localStorage.setItem("contract_ai_settings", JSON.stringify(parsed));
+                }
+                setSettings(parsed);
+            }
             catch { console.error("Failed to parse settings"); }
         }
     }, []);
